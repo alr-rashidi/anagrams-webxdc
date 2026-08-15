@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./locals/en/icon.png" alt="icon">
+  <img src="./git-assets/icon.webp" alt="icon">
 </p>
 <h1 align="center">W.O.R.D (Anagrams)</h1>
 
