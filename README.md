@@ -31,4 +31,4 @@ node build-dict.js words.txt
 
 ### Adding a language
 
-Copy an existing locale folder under `locals/` (e.g. `locals/en/`), translate the strings in `strings.js`, and update `manifest.toml`. Each locale needs its own `icon.png` and a `dictionary.packed.js` built from a word list in that language.
+Copy an existing locale folder under `locals/` (e.g. `locals/en/`), translate the strings in `strings.js`, and update `manifest.toml`. Each locale needs its own `icon.png` and a `dictionary.packed.js` built from a word list in that language(described above).
