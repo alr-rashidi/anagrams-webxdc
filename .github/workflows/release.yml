@@ -1,0 +1,91 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set version
+        id: version
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="dev"
+          fi
+          echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Using version: ${VERSION}"
+
+      - name: Build one .xdc per locale
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          mkdir -p dist
+
+          for locale_dir in locals/*/; do
+            [ -d "$locale_dir" ] || continue
+            locale="$(basename "$locale_dir")"
+            [ -f "$locale_dir/strings.js" ] || continue
+
+            # Set version in the locale manifest
+            if grep -q '^version[[:space:]]*=' "$locale_dir/manifest.toml"; then
+              sed -i "s/^version[[:space:]]*=.*/version = \"${VERSION}\"/" "$locale_dir/manifest.toml"
+            else
+              echo "version = \"${VERSION}\"" >> "$locale_dir/manifest.toml"
+            fi
+
+            # Temporarily place all locale files next to the app files
+            locale_files=("$locale_dir"/*)
+            cp -r "$locale_dir"/. .
+
+            XDC_NAME="word-${locale}-${VERSION}.xdc"
+
+            zip -r "${XDC_NAME}" . \
+              -x ".git/*" \
+              -x ".github/*" \
+              -x "temp/*" \
+              -x "git-assets/*" \
+              -x "locals/*" \
+              -x "README.md" \
+              -x "*.xdc" \
+              -x "dist/*"   # avoid packaging a previous build
+
+            mv "${XDC_NAME}" dist/
+
+            echo "=== Contents of ${XDC_NAME} ==="
+            unzip -l "dist/${XDC_NAME}"
+            test -s "dist/${XDC_NAME}"
+
+            # Remove the temporary locale files from the root
+            for f in "${locale_files[@]}"; do
+              rm -rf "./$(basename "$f")"
+            done
+          done
+
+          echo "=== Built .xdc files ==="
+          ls -la dist/
+
+      - name: Upload .xdc files as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: xdc-files
+          path: dist/*.xdc
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.xdc
+          generate_release_notes: true
