@@ -104,6 +104,7 @@ export const strings = {
   lettersSeparator: " ، ",
   listSeparator: "، ",
   letterAriaLabel: "حرف {letter}",
+  themeToggle: "تغییر تم روشن/تاریک",
   timeLocale: "fa-IR",
   progressStats: "{found} / {totalWords} ({foundPts} / {totalPts} امتیاز)",
   fallbackPlayerName: "یک بازیکن",

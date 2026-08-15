@@ -43,6 +43,7 @@
 /* Dark Mode Neo-brutalism: brighter layered backgrounds so black borders & shadows stay visible */
 @media (prefers-color-scheme: dark) {
   :root {
+    color-scheme: dark;
     --bg: #262626;
     --bg2: #4d4d4d;
     --card-bg: #3a3a3a;
@@ -65,6 +66,44 @@
     --neo-shadow-md: 4px 4px 0px #000000;
     --neo-shadow-lg: 6px 6px 0px #000000;
   }
+}
+
+/* Manual theme override via the header toggle button.
+   Unchanged variables (borders, shadows, radii) inherit from :root. */
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f7e8c9;
+  --bg2: #fff6e0;
+  --card-bg: #ffffff;
+  --text-primary: #000000;
+  --text-secondary: #1a1a1a;
+  --accent-color: #ff3366;
+  --accent-hover: #e01b4c;
+  --accent-light: #ffd6e0;
+  --success-color: #000000;
+  --success-bg: #4ade80;
+  --yellow-neon: #fef08a;
+  --error-color: #000000;
+  --error-bg: #ff6b6b;
+  --tile-bg: #a7f3d0;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #262626;
+  --bg2: #4d4d4d;
+  --card-bg: #3a3a3a;
+  --text-primary: #ffffff;
+  --text-secondary: #e0e0e0;
+  --accent-color: #ff3366;
+  --accent-hover: #ff5277;
+  --accent-light: #3d1424;
+  --success-color: #ffffff;
+  --success-bg: #10b981;
+  --yellow-neon: #b45309;
+  --error-color: #ffffff;
+  --error-bg: #ef4444;
+  --tile-bg: #4b5563;
 }
 
 * {
@@ -90,6 +129,7 @@ body {
 }
 
 header {
+  position: relative;
   text-align: center;
   margin-bottom: 20px;
 }
@@ -120,6 +160,40 @@ h1 {
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--text-secondary);
+}
+
+/* Theme toggle button (top corner) */
+.theme-toggle {
+  position: absolute;
+  top: 12px;
+  inset-inline-end: 12px;
+  z-index: 100;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--neo-shadow-sm);
+  font-size: 1.3rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.1s ease;
+}
+
+.theme-toggle:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--neo-shadow-md);
+}
+
+.theme-toggle:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px var(--border-color);
 }
 
 /* Card layout */

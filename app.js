@@ -50,6 +50,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Setup Dev Simulator Bar
   setupDevSimulator();
+
+  // Setup Light/Dark theme toggle
+  setupThemeToggle();
 });
 
 function renderStaticStrings() {
@@ -811,6 +814,42 @@ function renderFoundWords(words) {
     chip.appendChild(authorSpan);
 
     container.appendChild(chip);
+  });
+}
+
+function setupThemeToggle() {
+  const btn = document.getElementById("themeToggleBtn");
+  if (!btn) return;
+
+  const THEME_KEY = "word_theme";
+
+  // Resolve the currently visible theme, falling back to the OS preference.
+  function effectiveTheme() {
+    const stored = document.documentElement.getAttribute("data-theme");
+    if (stored === "light" || stored === "dark") return stored;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  }
+
+  // Icon shows the theme you switch TO when tapped.
+  function updateIcon() {
+    btn.textContent = effectiveTheme() === "dark" ? "☀️" : "🌙";
+    btn.setAttribute("aria-label", strings.themeToggle);
+  }
+
+  // Restore the saved preference on load.
+  const saved = localStorage.getItem(THEME_KEY);
+  if (saved === "light" || saved === "dark") {
+    document.documentElement.setAttribute("data-theme", saved);
+  }
+  updateIcon();
+
+  btn.addEventListener("click", () => {
+    const next = effectiveTheme() === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem(THEME_KEY, next);
+    updateIcon();
   });
 }
 

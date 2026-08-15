@@ -104,6 +104,7 @@ export const strings = {
   lettersSeparator: " ، ",
   listSeparator: "، ",
   letterAriaLabel: "Letter {letter}",
+  themeToggle: "Toggle light/dark theme",
   timeLocale: "en-US",
   progressStats: "{found} / {totalWords} ({foundPts} / {totalPts} pts)",
   fallbackPlayerName: "a player",
