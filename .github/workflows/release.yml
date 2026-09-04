@@ -32,55 +32,82 @@ jobs:
           echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "Using version: ${VERSION}"
 
-      - name: Build .xdc per locale
+      - name: Build one minified .xdc per locale
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
+          MAKE_XDC_PATH="$(pwd)/git-assets/make-xdc.sh"
+          chmod +x "$MAKE_XDC_PATH"
           mkdir -p dist
-          chmod +x ./git-assets/make-xdc.sh
+
+          LOCALES_DIR=""
+          for candidate in locales locals localization; do
+            if [ -d "$candidate" ]; then
+              LOCALES_DIR="$candidate"
+              break
+            fi
+          done
+          if [ -z "$LOCALES_DIR" ]; then
+            echo "Error: No locales/locals/localization directory found!" >&2
+            exit 1
+          fi
+          echo "Using locales directory: $LOCALES_DIR"
 
           LOCALE_FOUND=false
+          for locale_dir in "$LOCALES_DIR"/*/; do
+            [ -d "$locale_dir" ] || continue
+            locale="$(basename "$locale_dir")"
+            echo "=== Building minified package for locale: ${locale} ==="
+            LOCALE_FOUND=true
 
-          LOCALES_DIR="locales"
+            STAGE=".stage-$locale"
+            rm -rf "$STAGE"
+            mkdir -p "$STAGE"
 
-          if [ -n "$LOCALES_DIR" ]; then
-            for locale_dir in "$LOCALES_DIR"/*/; do
-              [ -d "$locale_dir" ] || continue
-              locale="$(basename "$locale_dir")"
+            # Copy root files only (exclude locales, tools and temporary directories)
+            find . -mindepth 1 -maxdepth 1 \
+              ! -name ".git" \
+              ! -name ".github" \
+              ! -name "dist" \
+              ! -name "temp" \
+              ! -name "locales" \
+              ! -name "locals" \
+              ! -name "localization" \
+              ! -name ".stage-*" \
+              ! -name "node_modules" \
+              ! -name "git-assets" \
+              ! -name "build-dict.js" \
+              -exec cp -a {} "$STAGE/" \;
 
-              echo "=== Building package for locale: ${locale} ==="
-              LOCALE_FOUND=true
+            # Copy locale contents to the root of STAGE
+            cp -a "$locale_dir"/. "$STAGE/"
 
-              # Set version in the locale manifest if present
-              if [ -f "$locale_dir/manifest.toml" ]; then
-                if grep -q '^version[[:space:]]*=' "$locale_dir/manifest.toml"; then
-                  sed -i "s/^version[[:space:]]*=.*/version = \"${VERSION}\"/" "$locale_dir/manifest.toml"
-                else
-                  echo "version = \"${VERSION}\"" >> "$locale_dir/manifest.toml"
-                fi
+            # Update version in manifest.toml
+            if [ -f "$STAGE/manifest.toml" ]; then
+              if grep -q '^version[[:space:]]*=' "$STAGE/manifest.toml"; then
+                sed -i "s/^version[[:space:]]*=.*/version = \"${VERSION}\"/" "$STAGE/manifest.toml"
+              else
+                echo "version = \"${VERSION}\"" >> "$STAGE/manifest.toml"
               fi
+            fi
 
-              # Temporarily place all locale files next to the app files
-              locale_files=("$locale_dir"/*)
-              cp -r "$locale_dir"/. .
+            XDC_NAME="anagrams-${locale}-${VERSION}.xdc"
+            DEST_XDC="$(pwd)/dist/${XDC_NAME}"
 
-              XDC_NAME="nonograms-${locale}-${VERSION}.xdc"
+            # Copy the packaging script into STAGE so PROJECT_ROOT becomes STAGE
+            cp "$MAKE_XDC_PATH" "$STAGE/make-xdc.sh"
+            chmod +x "$STAGE/make-xdc.sh"
 
-              ./git-assets/make-xdc.sh "dist/${XDC_NAME}" --minify --verbose
+            (cd "$STAGE" && ./make-xdc.sh "$DEST_XDC" --minify --verbose)
 
-              echo "=== Contents of dist/${XDC_NAME} ==="
-              unzip -l "dist/${XDC_NAME}"
-              test -s "dist/${XDC_NAME}"
+            rm -rf "$STAGE"
 
-              # Remove the temporary locale files from the root
-              for f in "${locale_files[@]}"; do
-                rm -rf "./$(basename "$f")"
-              done
-            done
-          fi
+            echo "=== Contents of dist/${XDC_NAME} ==="
+            unzip -l "dist/${XDC_NAME}"
+            test -s "dist/${XDC_NAME}"
+          done
 
-          # Fail if no locales directory or locale subdirectories exist
           if [ "$LOCALE_FOUND" = false ]; then
-            echo "Error: No 'locales' directory containing locale subdirectories was found!" >&2
+            echo "Error: '$LOCALES_DIR' found but contains no locale subdirectories!" >&2
             exit 1
           fi
 
