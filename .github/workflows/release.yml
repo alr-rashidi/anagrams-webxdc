@@ -16,6 +16,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
       - name: Set version
         id: version
         run: |
@@ -27,52 +32,65 @@ jobs:
           echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "Using version: ${VERSION}"
 
-      - name: Build one .xdc per locale
+      - name: Build .xdc per locale
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
           mkdir -p dist
+          chmod +x ./git-assets/make-xdc.sh
 
-          for locale_dir in locals/*/; do
-            [ -d "$locale_dir" ] || continue
-            locale="$(basename "$locale_dir")"
-            [ -f "$locale_dir/strings.js" ] || continue
+          LOCALE_FOUND=false
 
-            # Set version in the locale manifest
-            if grep -q '^version[[:space:]]*=' "$locale_dir/manifest.toml"; then
-              sed -i "s/^version[[:space:]]*=.*/version = \"${VERSION}\"/" "$locale_dir/manifest.toml"
-            else
-              echo "version = \"${VERSION}\"" >> "$locale_dir/manifest.toml"
-            fi
+          # Check for locals/ or locales/ directory
+          LOCALS_DIR=""
+          if [ -d "locals" ]; then
+            LOCALS_DIR="locals"
+          elif [ -d "locales" ]; then
+            LOCALS_DIR="locales"
+          fi
 
-            # Temporarily place all locale files next to the app files
-            locale_files=("$locale_dir"/*)
-            cp -r "$locale_dir"/. .
+          if [ -n "$LOCALS_DIR" ]; then
+            for locale_dir in "$LOCALS_DIR"/*/; do
+              [ -d "$locale_dir" ] || continue
+              locale="$(basename "$locale_dir")"
 
-            XDC_NAME="word-${locale}-${VERSION}.xdc"
+              echo "=== Building package for locale: ${locale} ==="
+              LOCALE_FOUND=true
 
-            zip -r "${XDC_NAME}" . \
-              -x ".git/*" \
-              -x ".github/*" \
-              -x "temp/*" \
-              -x "git-assets/*" \
-              -x "locals/*" \
-              -x "README.md" \
-              -x "*.xdc" \
-              -x "dist/*"   # avoid packaging a previous build
+              # Set version in the locale manifest if present
+              if [ -f "$locale_dir/manifest.toml" ]; then
+                if grep -q '^version[[:space:]]*=' "$locale_dir/manifest.toml"; then
+                  sed -i "s/^version[[:space:]]*=.*/version = \"${VERSION}\"/" "$locale_dir/manifest.toml"
+                else
+                  echo "version = \"${VERSION}\"" >> "$locale_dir/manifest.toml"
+                fi
+              fi
 
-            mv "${XDC_NAME}" dist/
+              # Temporarily place all locale files next to the app files
+              locale_files=("$locale_dir"/*)
+              cp -r "$locale_dir"/. .
 
-            echo "=== Contents of ${XDC_NAME} ==="
-            unzip -l "dist/${XDC_NAME}"
-            test -s "dist/${XDC_NAME}"
+              XDC_NAME="nonograms-${locale}-${VERSION}.xdc"
 
-            # Remove the temporary locale files from the root
-            for f in "${locale_files[@]}"; do
-              rm -rf "./$(basename "$f")"
+              ./git-assets/make-xdc.sh "dist/${XDC_NAME}" --minify --verbose
+
+              echo "=== Contents of dist/${XDC_NAME} ==="
+              unzip -l "dist/${XDC_NAME}"
+              test -s "dist/${XDC_NAME}"
+
+              # Remove the temporary locale files from the root
+              for f in "${locale_files[@]}"; do
+                rm -rf "./$(basename "$f")"
+              done
             done
-          done
+          fi
 
-          echo "=== Built .xdc files ==="
+          # Fail if no locals/locales directory or locale subdirectories exist
+          if [ "$LOCALE_FOUND" = false ]; then
+            echo "Error: No 'locals' or 'locales' directory containing locale subdirectories was found!" >&2
+            exit 1
+          fi
+
+          echo "=== Built .xdc files in dist/ ==="
           ls -la dist/
 
       - name: Upload .xdc files as workflow artifact
