@@ -40,16 +40,10 @@ jobs:
 
           LOCALE_FOUND=false
 
-          # Check for locals/ or locales/ directory
-          LOCALS_DIR=""
-          if [ -d "locals" ]; then
-            LOCALS_DIR="locals"
-          elif [ -d "locales" ]; then
-            LOCALS_DIR="locales"
-          fi
+          LOCALES_DIR="locales"
 
-          if [ -n "$LOCALS_DIR" ]; then
-            for locale_dir in "$LOCALS_DIR"/*/; do
+          if [ -n "$LOCALES_DIR" ]; then
+            for locale_dir in "$LOCALES_DIR"/*/; do
               [ -d "$locale_dir" ] || continue
               locale="$(basename "$locale_dir")"
 
@@ -84,9 +78,9 @@ jobs:
             done
           fi
 
-          # Fail if no locals/locales directory or locale subdirectories exist
+          # Fail if no locales directory or locale subdirectories exist
           if [ "$LOCALE_FOUND" = false ]; then
-            echo "Error: No 'locals' or 'locales' directory containing locale subdirectories was found!" >&2
+            echo "Error: No 'locales' directory containing locale subdirectories was found!" >&2
             exit 1
           fi
 

@@ -23,7 +23,7 @@ The app is plain HTML/CSS/JS with no build step. Open `index.html` directly in a
 
 To test real chat integration, you have two options:
 1. Run /git-assets/make-xdc.sh and it will create /temp/app.xdc
-2. Package the main folder (without `locals`) and ‍`locals/XX/` files as a `.zip` file, rename it to `.xdc` and and send it into any supported messenger(like DeltaChat).
+2. Package the main folder (without `locales`) and ‍`locales/XX/` files as a `.zip` file, rename it to `.xdc` and and send it into any supported messenger(like DeltaChat).
 
 The word dictionary is gzip-compressed into `dictionary.packed.js`. Rebuild it from a plain-text word list (one word per line) with:
 
@@ -33,4 +33,4 @@ node build-dict.js words.txt
 
 ### Adding a language
 
-Copy an existing locale folder under `locals/` (e.g. `locals/en/`), translate the strings in `strings.js`, and update `manifest.toml`. Each locale needs its own `icon.png` and a `dictionary.packed.js` built from a word list in that language(described above).
+Copy an existing locale folder under `locales/` (e.g. `locales/en/`), translate the strings in `strings.js`, and update `manifest.toml`. Each locale needs its own `icon.png` and a `dictionary.packed.js` built from a word list in that language(described above).
